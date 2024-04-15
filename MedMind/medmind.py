@@ -4,6 +4,8 @@ import os
 import requests
 from Bio import Entrez
 import together
+from llama_index.llms.together import TogetherLLM
+from llama_index.core.llms import ChatMessage, MessageRole
 from pprint import pprint
 from llama_index.indices.managed.vectara import query
 from llama_index.core.schema import Document
@@ -33,21 +35,6 @@ retriever = index.as_retriever(similarity_top_k=7)
 model_name = "vectara/hallucination_evaluation_model"
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-def summarize_text(text):
-    """
-    Summarizes the given text using the Together.ai API.
-    """
-    headers = {"Authorization": f"Bearer {os.environ['TOGETHER_API']}"}
-    data = {"text": text}
-    response = requests.post(endpoint, headers=headers, json=data)
-
-    if response.status_code == 200:
-        summary_result = response.json()
-        summary = summary_result.get("summary")
-    else:
-        summary = None  # Or handle errors as needed
-    return summary
 
 def search_pubmed(query: str) -> Optional[List[str]]:
     """
@@ -91,16 +78,21 @@ def search_pubmed(query: str) -> Optional[List[str]]:
         print(f"Error accessing PubMed: {e}")
         return None
 
-def safe_search(query):
-    url = f"https://api.duckduckgo.com/?q={query}&format=json"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        results = "\n".join([f"- {result['Abstract']}" for result in data['RelatedTopics'][:3]])
-        return results
-    else:
-        return None
 
+def chat_with_pubmed(article_text, article_link):
+    """
+    Engages in a chat-like interaction with a PubMed article using TogetherLLM.
+    """
+    llm = TogetherLLM(model="QWEN/QWEN1.5-14B-CHAT", api_key=os.environ['TOGETHER_API'])
+    messages = [
+        ChatMessage(role=MessageRole.SYSTEM, content="You are a helpful AI assistant summarizing and answering questions about the following medical research article: " + article_link),
+        ChatMessage(role=MessageRole.USER, content=article_text)
+    ]
+    response = llm.chat(messages)
+    if response:
+        return str(response)
+    else:
+        return "I'm sorry, I couldn't generate a summary for this article."
 def medmind_chatbot(user_input, chat_history=None):
     if chat_history is None:
         chat_history = []
@@ -108,26 +100,22 @@ def medmind_chatbot(user_input, chat_history=None):
     # 1. Query Vectara for medical knowledge base context
     query_str = user_input
     response = index.as_query_engine().query(query_str)
-    vectara_response = f"**MedMind vectara Knowledge Base Response:**\n{response.response}"
+    vectara_response = f"**MedMind Vectara Knowledge Base Response:**\n{response.response}"
 
-    # 2. Search PubMed and summarize relevant articles
+    # 2. Search PubMed
     pubmed_results = search_pubmed(user_input)
+
+    # 3. Process PubMed results for chat interaction
     pubmed_response = ""
     if pubmed_results:
-        pubmed_response += "**Relevant PubMed Articles (Summarized):**\n\n"
-        for result in pubmed_results:
-            title, abstract, link = result.split("\n")[:3] 
-            summary = summarize_text(abstract)
-            pubmed_response += f"**{title}**\n{summary}\n[Link]({link})\n\n"
-    
-    # 3. Perform safe search using DuckDuckGo
-    search_results = safe_search(user_input)
-    search_response = ""
-    if search_results:
-        search_response += f"**Web Search Results:**\n{search_results}"
+        pubmed_response += "**PubMed Articles (Chat & Summarize):**\n\n"
+        for article_text in pubmed_results:
+            title, abstract, link = article_text.split("\n")[:3] 
+            chat_summary = chat_with_pubmed(abstract, link)  # Assign the returned text 
+            pubmed_response += f"**{title}**\n{chat_summary}\n{link}\n\n"
 
-    # Combine responses
-    response_text = vectara_response + "\n\n" + pubmed_response + "\n\n" + search_response
+    # 4. Combine responses (Vectara first, then PubMed chat)
+    response_text = vectara_response + "\n\n" + pubmed_response
 
     # Hallucination Evaluation
     def vectara_hallucination_evaluation_model(text):
