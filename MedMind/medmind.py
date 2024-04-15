@@ -106,13 +106,14 @@ def medmind_chatbot(user_input, chat_history=None):
     pubmed_results = search_pubmed(user_input)
 
     # 3. Process PubMed results for chat interaction
-    pubmed_response = ""
+    pubmed_response = "**PubMed Articles (Chat & Summarize):**\n\n"
     if pubmed_results:
-        pubmed_response += "**PubMed Articles (Chat & Summarize):**\n\n"
         for article_text in pubmed_results:
-            title, abstract, link = article_text.split("\n")[:3] 
-            chat_summary = chat_with_pubmed(abstract, link)  # Assign the returned text 
+            title, abstract, link = article_text.split("\n")[:3]
+            chat_summary = chat_with_pubmed(abstract, link)
             pubmed_response += f"**{title}**\n{chat_summary}\n{link}\n\n"
+    else:
+        pubmed_response += "No relevant PubMed articles found.\n\n"
 
     # 4. Combine responses (Vectara first, then PubMed chat)
     response_text = vectara_response + "\n\n" + pubmed_response
@@ -125,7 +126,7 @@ def medmind_chatbot(user_input, chat_history=None):
         return hallucination_probability
 
     hallucination_score = vectara_hallucination_evaluation_model(response_text)
-    
+
     # Response Filtering/Modification
     HIGH_HALLUCINATION_THRESHOLD = 0.8  
     if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
