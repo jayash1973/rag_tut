@@ -35,7 +35,7 @@ os.environ["GOOGLE_SEARCH_API_KEY"] = os.getenv("GOOGLE_SEARCH_API_KEY", "AIzaSy
 os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY", "4523c180-39fd-4c48-99e8-88164df85b0a")
 
 # Initialize the Vectara index
-vectara_index = VectaraIndex()
+index = VectaraIndex()
 
 endpoint = 'https://api.together.xyz/inference'
 
@@ -49,7 +49,6 @@ def search_pubmed(query: str) -> Optional[List[str]]:
     Searches PubMed for a given query and returns a list of formatted results 
     (or None if no results are found).
     """
-    global Entrez
     Entrez.email = "jayashbhardwaj3@gmail.com"  # Replace with your email
 
     try:
@@ -129,38 +128,49 @@ def search_web(query: str, num_results: int = 3) -> Optional[List[str]]:
         print(f"Error performing web search: {e}")
         return None
 
-def medmind_chatbot(user_input, index, chat_history=None):
+def medmind_chatbot(user_input, chat_history=None):
+    """
+    Processes user input, interacts with various resources, and generates a response. 
+    Handles potential errors, maintains chat history, and evaluates hallucination risk.
+    """
+
     if chat_history is None:
         chat_history = []
 
-    response_text = ""
+    response_parts = []  # Collect responses from different sources
+
     try:
-        # Directly proceed with Vectara, PubMed, and Web searches
-        query_str = user_input
-        response = vectara_index.as_query_engine().query(query_str)
-        vectara_response = f"**MedMind Vectara Knowledge Base Response:**\n{response.response}"
+        # Vectara Search
+        try:
+            query_str = user_input
+            response = index.as_query_engine().query(query_str)
+            response_parts.append(f"**MedMind Vectara Knowledge Base Response:**\n{response.response}")
+        except Exception as e:
+            print(f"Error in Vectara search: {e}")
+            response_parts.append("Vectara knowledge base is currently unavailable.")
 
         # PubMed Search and Chat
         pubmed_results = search_pubmed(user_input)
-        pubmed_response = "**PubMed Articles (Chat & Summarize):**\n\n"
         if pubmed_results:
+            response_parts.append("**PubMed Articles (Chat & Summarize):**")
             for article_text in pubmed_results:
                 title, abstract, link = article_text.split("\n")[:3]
                 chat_summary = chat_with_pubmed(abstract, link)
-                pubmed_response += f"{title}\n{chat_summary}\n{link}\n\n"
+                response_parts.append(f"{title}\n{chat_summary}\n{link}\n")
         else:
-            pubmed_response += "No relevant PubMed articles found.\n\n"
+            response_parts.append("No relevant PubMed articles found.")
 
         # Web Search
         web_results = search_web(user_input)
-        web_response = "**Web Search Results:**\n\n"
         if web_results:
-            web_response += "\n".join(web_results)
+            response_parts.append("**Web Search Results:**")
+            response_parts.extend(web_results)
         else:
-            web_response += "No relevant web search results found.\n\n"
+            response_parts.append("No relevant web search results found.")
 
-        # Combine responses from different sources
-        response_text = vectara_response + "\n\n" + pubmed_response + "\n\n" + web_response
+        # Combine response parts into a single string
+        response_text = "\n\n".join(response_parts)
+
         # Hallucination Evaluation
         def vectara_hallucination_evaluation_model(text):
             inputs = tokenizer(text, return_tensors="pt")
@@ -168,14 +178,14 @@ def medmind_chatbot(user_input, index, chat_history=None):
             hallucination_probability = outputs.logits[0][0].item()  
             return hallucination_probability
 
-        # Hallucination Evaluation (applies to all responses)
         hallucination_score = vectara_hallucination_evaluation_model(response_text)
         HIGH_HALLUCINATION_THRESHOLD = 0.9
         if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
             response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
 
     except Exception as e:
-        response_text = f"An error occurred while processing your request: {e}"
+        print(f"Error in chatbot: {e}")
+        response_text = "An error occurred. Please try again later."
 
     chat_history.append((user_input, response_text))
     return response_text, chat_history
