@@ -48,6 +48,7 @@ def search_pubmed(query: str) -> Optional[List[str]]:
     Searches PubMed for a given query and returns a list of formatted results 
     (or None if no results are found).
     """
+    global Entrez
     Entrez.email = "jayashbhardwaj3@gmail.com"  # Replace with your email
 
     try:
