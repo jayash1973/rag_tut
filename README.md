@@ -45,4 +45,4 @@ Contributions are welcome! Please refer to the contributing guidelines.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
