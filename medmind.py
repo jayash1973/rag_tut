@@ -1,7 +1,6 @@
 from llama_index.indices.managed.vectara import VectaraIndex
 from dotenv import load_dotenv
 import os
-from docx import Document
 from llama_index.llms.together import TogetherLLM
 from llama_index.core.llms import ChatMessage, MessageRole
 from Bio import Entrez 
