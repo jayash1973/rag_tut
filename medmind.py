@@ -132,45 +132,46 @@ def search_web(query: str, num_results: int = 3) -> Optional[List[str]]:
 
 def extract_info_and_create_index(uploaded_file):
     try:
-        # Extract text based on file type
-        if uploaded_file.name.endswith(".pdf"):
+        # Validate file format
+        supported_formats = [".pdf", ".docx", ".txt"]
+        if not any(uploaded_file.name.endswith(fmt) for fmt in supported_formats):
+            raise ValueError("Unsupported file format. Please upload a PDF, DOCX, or TXT file.")
 
+        text = ""
+        if uploaded_file.name.endswith(".pdf"):
             pdf_reader = PdfReader(uploaded_file)
-            text = ""
             for page_num in range(len(pdf_reader.pages)):
                 page = pdf_reader.pages[page_num]
                 try:
                     text += page.extract_text()
                 except Exception as e:
                     print(f"Error extracting text from PDF page {page_num}: {e}")
+                    # Consider raising a custom exception or skipping the page
         elif uploaded_file.name.endswith(".docx"):
-
             doc = Document(uploaded_file)
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+            text += "\n".join([paragraph.text for paragraph in doc.paragraphs])
         else:  # Assuming .txt or other text-based format
             text = uploaded_file.getvalue().decode("utf-8")
 
-        # Handle large files by chunking
-        text_chunks = []
-        max_chunk_size = 256  # Adjust as needed
-        for i in range(0, len(text), max_chunk_size):
-            text_chunks.append(text[i : i + max_chunk_size])
+        # Handle large files using a more efficient chunking library
+        from langchain.document_loaders import TextLoader
+        loader = TextLoader(io.StringIO(text), chunk_size=256, chunk_overlap=20)
+        documents = loader.load_and_split()
 
-        # Create documents and embeddings for each chunk
-        documents = []
         embed_model = HuggingFaceBgeEmbeddings(model_name="BAAI/bge-base-en")
         Settings.embed_model = embed_model
-        for chunk in text_chunks:
-            doc = Document(chunk)
-            documents.append(doc)
 
-        # Create a Chroma vector store index
         index = Chroma.from_documents(documents, embed_model)
 
         return index
 
-    except Exception as e:
+    except ValueError as e:
         print(f"Error processing uploaded file: {e}")
+        st.error(str(e))  # Display error message in Streamlit app
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        st.error("An error occurred while processing the file.")
         return None
 def chat_with_document(index, user_query):
     try:
