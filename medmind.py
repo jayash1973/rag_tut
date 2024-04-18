@@ -1,27 +1,15 @@
 from llama_index.indices.managed.vectara import VectaraIndex
 from dotenv import load_dotenv
 import os
-from PyPDF2 import PdfReader
 from docx import Document
-from sentence_transformers import SentenceTransformer
-from llama_index.core.schema import Document
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.together import TogetherLLM
 from llama_index.core.llms import ChatMessage, MessageRole
-from langchain.chains.question_answering import load_qa_chain
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings.huggingface import HuggingFaceBgeEmbeddings
-from langchain_community.vectorstores import Chroma 
-from langchain.text_splitter import CharacterTextSplitter
-import io
 from Bio import Entrez 
 import ssl
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import streamlit as st
 from googleapiclient.discovery import build
 from typing import List, Optional
-from llama_index.core import Settings
 
 load_dotenv()
 
@@ -32,7 +20,6 @@ os.environ["VECTARA_CORPUS_ID"] = os.getenv("VECTARA_CORPUS_ID", "2")
 os.environ["VECTARA_CUSTOMER_ID"] = os.getenv("VECTARA_CUSTOMER_ID", "2653936430")
 os.environ["TOGETHER_API"] = os.getenv("TOGETHER_API", "7e6c200b7b36924bc1b4a5973859a20d2efa7180e9b5c977301173a6c099136b")
 os.environ["GOOGLE_SEARCH_API_KEY"] = os.getenv("GOOGLE_SEARCH_API_KEY", "AIzaSyBnQwS5kPZGKuWj6sH1aBx5F5bZq0Q5jJk")
-os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY", "4523c180-39fd-4c48-99e8-88164df85b0a")
 
 # Initialize the Vectara index
 index = VectaraIndex()
