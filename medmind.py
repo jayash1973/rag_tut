@@ -241,7 +241,7 @@ def medmind_chatbot(user_input, index, chat_history=None):
 
         # Hallucination Evaluation (applies to all responses)
         hallucination_score = vectara_hallucination_evaluation_model(response_text)
-        HIGH_HALLUCINATION_THRESHOLD = 0.8
+        HIGH_HALLUCINATION_THRESHOLD = 0.9
         if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
             response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
 
