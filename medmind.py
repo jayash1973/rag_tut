@@ -48,9 +48,14 @@ def search_pubmed(query: str) -> Optional[List[str]]:
     Searches PubMed for a given query and returns a list of formatted results 
     (or None if no results are found).
     """
-    Entrez.email = "jayashbhardwaj3@gmail.com"  # Use environment variable for email
+    Entrez.email = "jayashbhardwaj3@gmail.com"  # Replace with your email
 
     try:
+        # Use Entrez with HTTPS context to handle SSL verification
+        from Bio import Entrez 
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
+
         handle = Entrez.esearch(db="pubmed", term=query, retmax=3)
         record = Entrez.read(handle)
         id_list = record["IdList"]
@@ -70,7 +75,7 @@ def search_pubmed(query: str) -> Optional[List[str]]:
                 abstract = article_data.get('Abstract', {}).get('AbstractText', [""])[0]
 
                 result = f"**Title:** {title}\n**Abstract:** {abstract}\n"
-                result += f"**Link:** https://pubmed.ncbi.nlm.nih.gov/{medline_citation['PMID']}\n\n"
+                result += f"**Link:** https://pubmed.ncbi.nlm.gov/{medline_citation['PMID']}\n\n"
                 results.append(result)
             except KeyError as e:
                 print(f"Error parsing article: {article}, Error: {e}")
@@ -80,11 +85,6 @@ def search_pubmed(query: str) -> Optional[List[str]]:
     except Exception as e:
         print(f"Error accessing PubMed: {e}")
         return None
-
-    except IOError as e:
-        print(f"Error accessing PubMed: {e}")
-        return None
-
 
 def chat_with_pubmed(article_text, article_link):
     """
