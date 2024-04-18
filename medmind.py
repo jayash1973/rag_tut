@@ -290,10 +290,6 @@ def display_chat_history():
         st.info(f"**You:** {user_msg}")
         st.success(f"**MedMind:** {bot_msg}")
 
-# Define function to clear chat history
-def clear_chat():
-    st.session_state.chat_history = []
-# Define main function
 def main():
     """
     Main function for the MedMind Streamlit application. 
@@ -358,16 +354,15 @@ def main():
     input_container = st.container()
     with input_container:
         user_input = st.text_input("You: ", key="input_placeholder", placeholder="Type your medical question here...")
-        new_chat_button = st.button("Clear Chat")
-        if new_chat_button:
-            st.session_state.chat_history = []  # Clear chat history
+        ask_button = st.button("Ask")  # Renamed button to "Ask"
 
     # Initialize the Vectara index
     vectara_index = VectaraIndex()
     # Initialize the Chroma index
     index = extract_info_and_create_index(uploaded_file) if uploaded_file else None
 
-    if user_input:
+    # Process user input when the "Ask" button is clicked and input is not empty
+    if ask_button and user_input:
         response, st.session_state.chat_history = medmind_chatbot(user_input, vectara_index, st.session_state.chat_history)
         with output_container:
             display_chat_history()
