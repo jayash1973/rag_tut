@@ -41,7 +41,7 @@ MedMind is an advanced Retrieval Augmented Generation (RAG) chatbot designed to 
 
 ## Contributing
 
-Contributions are welcome! Please refer to the contributing guidelines.
+Contributions are welcome!
 
 ## License
 
