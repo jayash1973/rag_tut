@@ -7,3 +7,4 @@ streamlit
 google-api-python-client
 llama-index-llms-together
 llama-index-indices-managed-vectara
+torch
