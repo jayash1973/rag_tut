@@ -290,12 +290,11 @@ def display_chat_history():
         st.info(f"**You:** {user_msg}")
         st.success(f"**MedMind:** {bot_msg}")
 
-def main():
-    """
-    Main function for the MedMind Streamlit application. 
-    Sets up the UI, handles user interactions, and generates responses.
-    """
+# Define function to clear chat history
+def clear_chat():
+    st.session_state.chat_history = []
 
+def main():
     # Streamlit Page Configuration
     st.set_page_config(page_title="MedMind Chatbot", layout="wide")
 
@@ -332,9 +331,9 @@ def main():
     # Example Questions (Sidebar)
     example_questions = [
         "What are the symptoms of COVID-19?",
-        "what are the symptoms of malaria",
+        "How can I manage my diabetes?",
         "What are the potential side effects of ibuprofen?",
-        "What is the tratement for lung cancer"
+        "What lifestyle changes can help prevent heart disease?"
     ]
     st.sidebar.header("Example Questions")
     for question in example_questions:
@@ -342,7 +341,7 @@ def main():
 
     # File Uploader (Sidebar)
     st.sidebar.header("Upload Document")
-    uploaded_file = st.sidebar.file_uploader("Choose a document(this feature is under development hence errors might show up)", type=["txt", "pdf", "docx"])
+    uploaded_file = st.sidebar.file_uploader("Choose a document", type=["txt", "pdf", "docx"])
     if uploaded_file is not None:
         st.session_state.uploaded_index = extract_info_and_create_index(uploaded_file)
         st.sidebar.success("Document indexed successfully!")
@@ -354,21 +353,23 @@ def main():
     input_container = st.container()
     with input_container:
         user_input = st.text_input("You: ", key="input_placeholder", placeholder="Type your medical question here...")
-        ask_button = st.button("Ask")  # Renamed button to "Ask"
+        new_chat_button = st.button("Start New Chat")
+        if new_chat_button:
+            st.session_state.chat_history = []  # Clear chat history
 
-    # Initialize the Vectara index
-    vectara_index = VectaraIndex()
     # Initialize the Chroma index
     index = extract_info_and_create_index(uploaded_file) if uploaded_file else None
 
-    # Process user input when the "Ask" button is clicked and input is not empty
-    if ask_button and user_input:
-        response, st.session_state.chat_history = medmind_chatbot(user_input, vectara_index, st.session_state.chat_history)
+    if user_input:
+        response, st.session_state.chat_history = medmind_chatbot(user_input, index, st.session_state.chat_history)
         with output_container:
             display_chat_history()
 
     # Information Popup
     show_info_popup()
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
