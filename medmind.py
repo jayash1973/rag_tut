@@ -332,9 +332,9 @@ def main():
     # Example Questions (Sidebar)
     example_questions = [
         "What are the symptoms of COVID-19?",
-        "How can I manage my diabetes?",
+        "what are the symptoms of malaria",
         "What are the potential side effects of ibuprofen?",
-        "What lifestyle changes can help prevent heart disease?"
+        "What is the tratement for lung cancer"
     ]
     st.sidebar.header("Example Questions")
     for question in example_questions:
