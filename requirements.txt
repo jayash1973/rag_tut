@@ -12,3 +12,4 @@ langchain-community
 llama-index-embeddings-huggingface
 llama-index-llms-together
 llama-index-indices-managed-vectara
+ssl
