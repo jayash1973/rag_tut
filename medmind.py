@@ -342,7 +342,7 @@ def main():
 
     # File Uploader (Sidebar)
     st.sidebar.header("Upload Document")
-    uploaded_file = st.sidebar.file_uploader("Choose a document", type=["txt", "pdf", "docx"])
+    uploaded_file = st.sidebar.file_uploader("Choose a document(this feature is under development hence errors might show up)", type=["txt", "pdf", "docx"])
     if uploaded_file is not None:
         st.session_state.uploaded_index = extract_info_and_create_index(uploaded_file)
         st.sidebar.success("Document indexed successfully!")
