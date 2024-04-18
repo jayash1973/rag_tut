@@ -4,7 +4,6 @@ import os
 from PyPDF2 import PdfReader
 from docx import Document
 from sentence_transformers import SentenceTransformer
-from Bio import Entrez
 from llama_index.core.schema import Document
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -16,6 +15,8 @@ from langchain.embeddings.huggingface import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores import Chroma 
 from langchain.text_splitter import CharacterTextSplitter
 import io
+from Bio import Entrez 
+import ssl
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import streamlit as st
 from googleapiclient.discovery import build
@@ -52,9 +53,6 @@ def search_pubmed(query: str) -> Optional[List[str]]:
     Entrez.email = "jayashbhardwaj3@gmail.com"  # Replace with your email
 
     try:
-        # Use Entrez with HTTPS context to handle SSL verification
-        from Bio import Entrez 
-        import ssl
         ssl._create_default_https_context = ssl._create_unverified_context
 
         handle = Entrez.esearch(db="pubmed", term=query, retmax=3)
@@ -131,108 +129,38 @@ def search_web(query: str, num_results: int = 3) -> Optional[List[str]]:
         print(f"Error performing web search: {e}")
         return None
 
-def extract_info_and_create_index(uploaded_file):
-    try:
-        # Validate file format
-        supported_formats = [".pdf", ".docx", ".txt"]
-        if not any(uploaded_file.name.endswith(fmt) for fmt in supported_formats):
-            raise ValueError("Unsupported file format. Please upload a PDF, DOCX, or TXT file.")
-
-        text = ""
-        if uploaded_file.name.endswith(".pdf"):
-            pdf_reader = PdfReader(uploaded_file)
-            for page_num in range(len(pdf_reader.pages)):
-                page = pdf_reader.pages[page_num]
-                try:
-                    text += page.extract_text()
-                except Exception as e:
-                    print(f"Error extracting text from PDF page {page_num}: {e}")
-                    # Consider raising a custom exception or skipping the page
-        elif uploaded_file.name.endswith(".docx"):
-            doc = Document(uploaded_file)
-            text += "\n".join([paragraph.text for paragraph in doc.paragraphs])
-        else:  # Assuming .txt or other text-based format
-            text = uploaded_file.getvalue().decode("utf-8")
-
-        # Handle large files using a more efficient chunking library
-        from langchain.document_loaders import TextLoader
-        loader = TextLoader(io.StringIO(text), chunk_size=256, chunk_overlap=20)
-        documents = loader.load_and_split()
-
-        embed_model = HuggingFaceBgeEmbeddings(model_name="BAAI/bge-base-en")
-        Settings.embed_model = embed_model
-
-        index = Chroma.from_documents(documents, embed_model)
-
-        return index
-
-    except ValueError as e:
-        print(f"Error processing uploaded file: {e}")
-        st.error(str(e))  # Display error message in Streamlit app
-        return None
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        st.error("An error occurred while processing the file.")
-        return None
-def chat_with_document(index, user_query):
-    try:
-        # Retrieve relevant documents and their text content based on the user query
-        relevant_docs = index.similarity_search(user_query, k=3)
-
-        # Combine text from relevant documents (handling chunking)
-        document_text = ""
-        for doc in relevant_docs:
-            for chunk in doc.chunks:  # Access chunks within each document
-                document_text += chunk.page_content + "\n\n"
-
-        # Use TogetherAI's QWEN 1.5 14B model for generating the response
-        together_llm = TogetherLLM(model="QWEN/QWEN1.5-14B-CHAT", api_key=os.environ['TOGETHER_API'])
-
-        # Use Langchain's question-answering chain to generate a response
-        qa_chain = load_qa_chain(llm=together_llm, chain_type="stuff")
-        response = qa_chain.run(input_documents=relevant_docs, question=user_query)
-
-        return response
-    except Exception as e:
-        print(f"Error in chat_with_document: {e}")
-        return "An error occurred while processing your request."
-
 def medmind_chatbot(user_input, index, chat_history=None):
     if chat_history is None:
         chat_history = []
 
     response_text = ""
     try:
-        if "uploaded_index" in st.session_state and st.session_state["uploaded_index"] is not None:
-            response_text = chat_with_document(st.session_state["uploaded_index"], user_input)
+        # Directly proceed with Vectara, PubMed, and Web searches
+        query_str = user_input
+        response = vectara_index.as_query_engine().query(query_str)
+        vectara_response = f"**MedMind Vectara Knowledge Base Response:**\n{response.response}"
+
+        # PubMed Search and Chat
+        pubmed_results = search_pubmed(user_input)
+        pubmed_response = "**PubMed Articles (Chat & Summarize):**\n\n"
+        if pubmed_results:
+            for article_text in pubmed_results:
+                title, abstract, link = article_text.split("\n")[:3]
+                chat_summary = chat_with_pubmed(abstract, link)
+                pubmed_response += f"{title}\n{chat_summary}\n{link}\n\n"
         else:
-            # If no document is uploaded, proceed with Vectara, PubMed, and Web searches
-            query_str = user_input
-            response = vectara_index.as_query_engine().query(query_str)
-            vectara_response = f"**MedMind Vectara Knowledge Base Response:**\n{response.response}"
+            pubmed_response += "No relevant PubMed articles found.\n\n"
 
-            # PubMed Search and Chat
-            pubmed_results = search_pubmed(user_input)
-            pubmed_response = "**PubMed Articles (Chat & Summarize):**\n\n"
-            if pubmed_results:
-                for article_text in pubmed_results:
-                    title, abstract, link = article_text.split("\n")[:3]
-                    chat_summary = chat_with_pubmed(abstract, link)
-                    pubmed_response += f"{title}\n{chat_summary}\n{link}\n\n"
-            else:
-                pubmed_response += "No relevant PubMed articles found.\n\n"
+        # Web Search
+        web_results = search_web(user_input)
+        web_response = "**Web Search Results:**\n\n"
+        if web_results:
+            web_response += "\n".join(web_results)
+        else:
+            web_response += "No relevant web search results found.\n\n"
 
-            # Web Search
-            web_results = search_web(user_input)
-            web_response = "**Web Search Results:**\n\n"
-            if web_results:
-                web_response += "\n".join(web_results)
-            else:
-                web_response += "No relevant web search results found.\n\n"
-
-            # Combine responses from different sources
-            response_text = vectara_response + "\n\n" + pubmed_response + "\n\n" + web_response
-
+        # Combine responses from different sources
+        response_text = vectara_response + "\n\n" + pubmed_response + "\n\n" + web_response
         # Hallucination Evaluation
         def vectara_hallucination_evaluation_model(text):
             inputs = tokenizer(text, return_tensors="pt")
@@ -340,13 +268,6 @@ def main():
     for question in example_questions:
         st.sidebar.write(question)
 
-    # File Uploader (Sidebar)
-    st.sidebar.header("Upload Document")
-    uploaded_file = st.sidebar.file_uploader("Choose a document", type=["txt", "pdf", "docx"])
-    if uploaded_file is not None:
-        st.session_state.uploaded_index = extract_info_and_create_index(uploaded_file)
-        st.sidebar.success("Document indexed successfully!")
-
     # Output Container
     output_container = st.container()
 
@@ -358,19 +279,13 @@ def main():
         if new_chat_button:
             st.session_state.chat_history = []  # Clear chat history
 
-    # Initialize the Chroma index
-    index = extract_info_and_create_index(uploaded_file) if uploaded_file else None
-
     if user_input:
-        response, st.session_state.chat_history = medmind_chatbot(user_input, index, st.session_state.chat_history)
+        response, st.session_state.chat_history = medmind_chatbot(user_input, st.session_state.chat_history)
         with output_container:
             display_chat_history()
 
     # Information Popup
     show_info_popup()
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
