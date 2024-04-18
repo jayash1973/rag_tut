@@ -275,6 +275,8 @@ def show_info_popup():
         2.  **MedMind will provide a comprehensive response combining information from various sources.** This may include insights from its knowledge base, summaries of relevant research articles, and safe web search results.
         3.  **You can continue the conversation by asking follow-up questions or providing additional context.** This helps MedMind refine its search and offer more tailored information.
         4.  **in case the Medmind doesn't show the output please check your internet connection or rerun the same command**
+        5.  **user can either chat with the documents or with generate resposne from vectara + pubmed + web search**
+        5.  **chat with document feature is still under development so it would be better to avoid using it for now**
         """)
 
 # Initialize session state
