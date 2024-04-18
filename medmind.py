@@ -151,18 +151,18 @@ def medmind_chatbot(user_input, index, chat_history=None):
         # Combine responses from different sources
         response_text = vectara_response + "\n\n" + pubmed_response + "\n\n" + web_response
 
-    # Hallucination Evaluation
-    def vectara_hallucination_evaluation_model(text):
-        inputs = tokenizer(text, return_tensors="pt")
-        outputs = model(**inputs)
-        hallucination_probability = outputs.logits[0][0].item()  
-        return hallucination_probability
+        # Hallucination Evaluation
+        def vectara_hallucination_evaluation_model(text):
+            inputs = tokenizer(text, return_tensors="pt")
+            outputs = model(**inputs)
+            hallucination_probability = outputs.logits[0][0].item()  
+            return hallucination_probability
 
-    # Hallucination Evaluation (applies to all responses)
-    hallucination_score = vectara_hallucination_evaluation_model(response_text)
-    HIGH_HALLUCINATION_THRESHOLD = 0.9
-    if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
-        response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
+        # Hallucination Evaluation (applies to all responses)
+        hallucination_score = vectara_hallucination_evaluation_model(response_text)
+        HIGH_HALLUCINATION_THRESHOLD = 0.9
+        if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
+            response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
 
     except Exception as e:
         response_text = f"An error occurred while processing your request: {e}"
