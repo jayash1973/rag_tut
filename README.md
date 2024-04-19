@@ -1,17 +1,10 @@
----
-title: MedMind
-emoji: 👨‍⚕️
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: 1.33.0
-app_file: medmind.py
-pinned: false
----
 
 # MedMind: AI-Powered Medical Chatbot
 
 MedMind is an advanced Retrieval Augmented Generation (RAG) chatbot designed to provide reliable and informative responses to your medical inquiries. 
+
+## Demo
+https://huggingface.co/spaces/jayash391/RAG_MedMind
 
 ## Features
 
@@ -55,7 +48,7 @@ MedMind is an advanced Retrieval Augmented Generation (RAG) chatbot designed to 
 * [@stomanin](https://github.com/stomanin)
 * [@jayash1973](https://github.com/jayash1973)
 
-Contributions are welcome! Please refer to the contributing guidelines.
+Contributions are welcome! 
 
 ## License
 
