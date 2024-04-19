@@ -169,7 +169,7 @@ def medmind_chatbot(user_input, chat_history=None):
         hallucination_score = vectara_hallucination_evaluation_model(response_text)
         HIGH_HALLUCINATION_THRESHOLD = 0.9
         if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
-            response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
+            response_text = "I'm still under development and learning. I cannot confidently answer this question yet. (The generated response has exceeded the Hallucination threshold from the Vectara Hallucination Evaluation Model)"
 
     except Exception as e:
         print(f"Error in chatbot: {e}")
