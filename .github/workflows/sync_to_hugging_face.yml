@@ -8,7 +8,7 @@ on:
 
 jobs:
   sync-to-hub:
-    runs_on: ubuntu-latest
+    runs_on: .github/workflows/sync_to_hugging_face.yml
     steps:
       - uses: actions/checkout@v2
         with:
