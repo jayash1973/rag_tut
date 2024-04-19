@@ -1,10 +1,14 @@
 llama-index
 python-dotenv
+PyPDF2
+python-docx
+sentence-transformers
 biopython
 langchain
 transformers
 streamlit
 google-api-python-client
+langchain-community
+llama-index-embeddings-huggingface
 llama-index-llms-together
 llama-index-indices-managed-vectara
-torch
