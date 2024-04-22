@@ -1,12 +1,11 @@
 from llama_index.indices.managed.vectara import VectaraIndex
 from dotenv import load_dotenv
 import os
+from docx import Document
 from llama_index.llms.together import TogetherLLM
 from llama_index.core.llms import ChatMessage, MessageRole
 from Bio import Entrez 
 import ssl
-import torch
-import io
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import streamlit as st
 from googleapiclient.discovery import build
@@ -169,7 +168,7 @@ def medmind_chatbot(user_input, chat_history=None):
         hallucination_score = vectara_hallucination_evaluation_model(response_text)
         HIGH_HALLUCINATION_THRESHOLD = 0.9
         if hallucination_score > HIGH_HALLUCINATION_THRESHOLD:
-            response_text = "I'm still under development and learning. I cannot confidently answer this question yet. (The generated response has exceeded the Hallucination threshold from the Vectara Hallucination Evaluation Model)"
+            response_text = "I'm still under development and learning. I cannot confidently answer this question yet."
 
     except Exception as e:
         print(f"Error in chatbot: {e}")
@@ -182,23 +181,17 @@ def show_info_popup():
     with st.expander("How to use MedMind"):
         st.write("""
         **MedMind is an AI-powered chatbot designed to assist with medical information.**
-
         **Capabilities:**
-
         *   **Answers general medical questions:** MedMind utilizes a curated medical knowledge base to provide answers to a wide range of health-related inquiries.
         *   **Summarizes relevant research articles from PubMed:** The chatbot can retrieve and summarize research articles from the PubMed database, making complex scientific information more accessible.
         *   **Provides insights from a curated medical knowledge base:** Beyond simple answers, MedMind offers additional insights and context from its knowledge base to enhance understanding. 
         *   **Perform safe web searches related to your query:** The chatbot can perform web searches using the Google Search API, ensuring the safety and relevance of the results.
-
         **Limitations:**
-
         *   **Not a substitute for professional medical advice:** MedMind is not intended to replace professional medical diagnosis and treatment. Always consult a qualified healthcare provider for personalized medical advice.
         *   **General knowledge and educational purposes:** The information provided by MedMind is for general knowledge and educational purposes only and may not be exhaustive or specific to individual situations.
         *   **Under development:** MedMind is still under development and may occasionally provide inaccurate or incomplete information. It's important to critically evaluate responses and cross-reference with reliable sources.
         *   **Hallucination potential:** While MedMind employs a hallucination evaluation model to minimize the risk of generating fabricated information, there remains a possibility of encountering inaccurate responses, especially for complex or niche queries.
-
         **How to use:**
-
         1.  **Type your medical question in the text box.**
         2.  **MedMind will provide a comprehensive response combining information from various sources.** This may include insights from its knowledge base, summaries of relevant research articles, and safe web search results.
         3.  **You can continue the conversation by asking follow-up questions or providing additional context.** This helps MedMind refine its search and offer more tailored information.
